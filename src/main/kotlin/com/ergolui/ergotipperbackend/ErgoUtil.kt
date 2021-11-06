@@ -27,7 +27,7 @@ class ErgoUtil {
         ): SendTransactionResult {
             try {
                 val ergoClient = RestApiErgoClientWithMemory.create(
-                    "http://192.168.1.81:9053/",
+                    "http://49.12.210.225:9053/",
                     NetworkType.MAINNET,
                     "",
                     RestApiErgoClient.defaultMainnetExplorerUrl
