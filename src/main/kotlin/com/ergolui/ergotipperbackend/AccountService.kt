@@ -21,8 +21,14 @@ class AccountService(val db : AccountRepository,
         db.newAccount(ETBAccount.platform,ETBAccount.username,ETBAccount.password,ETBAccount.wallet.toString())
     }
 
-    fun changePassword(platform: String, username: String, password: String, newPassword: String){
-        db.updatePassword(platform,username,password,newPassword)
+    fun changePassword(platform: String, username: String, password: String, newPassword: String): String{
+        val account = db.findAccountSecure(platform,username,password)
+        return if (account != null) {
+            db.updatePassword(platform, username, password, newPassword)
+            ""
+        }
+        else
+            "Could not change to new password, maybe incorrect current password"
     }
 
     fun getSeed(platform: String, username: String, password: String): String

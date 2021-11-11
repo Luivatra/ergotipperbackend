@@ -14,9 +14,9 @@ class AccountResource(val service : AccountService) {
     fun changePassword(
         @PathVariable("platform") platform: String,
         @PathVariable("username") username: String,
-        @RequestBody passwordChange: PasswordChange)
+        @RequestBody passwordChange: PasswordChange): String
     {
-        service.changePassword(platform,username,passwordChange.password,passwordChange.newPassword)
+        return service.changePassword(platform,username,passwordChange.password,passwordChange.newPassword)
     }
 
     @PostMapping("/restore/")
