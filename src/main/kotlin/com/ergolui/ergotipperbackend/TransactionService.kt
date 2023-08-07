@@ -1,9 +1,7 @@
 package com.ergolui.ergotipperbackend
 
-import org.ergoplatform.appkit.ErgoToken
 import org.springframework.stereotype.Service
-import org.ergoplatform.appkit.Mnemonic
-import org.springframework.beans.factory.annotation.Value
+import org.ergoplatform.sdk.ErgoToken
 import kotlin.math.floor
 import kotlin.math.pow
 

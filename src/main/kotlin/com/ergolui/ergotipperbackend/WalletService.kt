@@ -3,7 +3,7 @@ package com.ergolui.ergotipperbackend
 import org.springframework.stereotype.Service
 import org.ergoplatform.appkit.Address
 import org.ergoplatform.appkit.NetworkType
-import org.ergoplatform.appkit.SecretString
+import org.ergoplatform.sdk.SecretString
 import org.springframework.beans.factory.annotation.Value
 import org.http4k.client.ApacheClient
 import org.http4k.core.Method
@@ -55,7 +55,7 @@ class WalletService(val db : WalletRepository,
         return BalanceTotal(confirmedETBBalance,unconfirmedETBBalance)
     }
 
-    fun getAddress(wallet_id: String) : String = Address.createEip3Address(0,NetworkType.MAINNET,this.getSeed(wallet_id),SecretString.create("")).toString()
+    fun getAddress(wallet_id: String) : String = Address.createEip3Address(0,NetworkType.MAINNET,this.getSeed(wallet_id),SecretString.create(""), false).toString()
 
     fun post(wallet: Wallet){
         db.newWallet(wallet.seed,this.key)
