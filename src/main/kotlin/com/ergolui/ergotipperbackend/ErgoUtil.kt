@@ -1,11 +1,13 @@
 package com.ergolui.ergotipperbackend
 
 import org.ergoplatform.appkit.*
+import org.ergoplatform.appkit.Transaction
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import org.ergoplatform.sdk.ErgoToken
 import org.ergoplatform.sdk.SecretString
 import org.springframework.core.env.Environment
 import org.springframework.stereotype.Component
+import javax.annotation.Nonnull
 
 
 @Component
@@ -77,7 +79,7 @@ class ErgoUtil(private val environment: Environment) {
 
                     txB.addOutputs(newBox, tipFeeBox)
 
-                    val boxesLoader = RecordingBoxesLoader().apply { withAllowChainedTx(true) }
+                    val boxesLoader = RecordingBoxesLoader().withAllowChainedTx(true)
 
                     boxOperations.withInputBoxesLoader(boxesLoader)
                         .withMaxInputBoxesToSelect(maxInputBoxes.toInt())
@@ -113,16 +115,63 @@ class ErgoUtil(private val environment: Environment) {
     }
 }
 
-private class RecordingBoxesLoader : ExplorerAndPoolUnspentBoxesLoader() {
+private class RecordingBoxesLoader : BoxOperations.ExplorerApiWithCheckerLoader() {
     val allBoxesLoaded = ArrayList<InputBox>()
+
+    private var unconfirmedSpentBoxesIds: List<String> = ArrayList()
+    private var unconfirmedBoxesFetched = false
+    private var allowChainedTx = false
+
+    fun withAllowChainedTx(allowChainedTx: Boolean): RecordingBoxesLoader {
+        this.allowChainedTx = allowChainedTx
+        return this
+    }
+
+    override fun prepare(
+        @Nonnull ctx: BlockchainContext,
+        addresses: List<Address?>?,
+        grossAmount: Long,
+        @Nonnull tokensToSpend: List<ErgoToken?>
+    ) {
+        unconfirmedSpentBoxesIds = ArrayList()
+        val dataSource = ctx.dataSource
+        val unconfirmedTransactions: MutableList<Transaction>? = dataSource.getUnconfirmedTransactions(0, 1000)
+        if (unconfirmedTransactions != null) {
+            for (unconfirmedTx in unconfirmedTransactions) {
+                (unconfirmedSpentBoxesIds as ArrayList<String>).addAll(unconfirmedTx.inputBoxesIds)
+            }
+        }
+    }
+
+    override fun prepareForAddress(address: Address?) {
+        unconfirmedBoxesFetched = false
+    }
+
+    override fun canUseBox(box: InputBox): Boolean {
+        return !unconfirmedSpentBoxesIds.contains(box.id.toString())
+    }
 
     override fun loadBoxesPage(
         ctx: BlockchainContext,
         sender: Address,
         page: Int
     ): MutableList<InputBox> {
-        val boxesLoaded = super.loadBoxesPage(ctx, sender, page)
-        allBoxesLoaded.addAll(boxesLoaded)
-        return boxesLoaded
+        val inputBoxes = super.loadBoxesPage(ctx, sender, page)
+
+        if (inputBoxes.isEmpty() && allowChainedTx && !unconfirmedBoxesFetched) {
+            // needed to not go into an infinite loop for the last page
+            unconfirmedBoxesFetched = true
+
+            // fetch unconfirmed transactions for this address and add its boxes as last page
+            try {
+                inputBoxes.addAll(ctx.dataSource.getUnconfirmedUnspentBoxesFor(sender, 0, 1000))
+            } catch (t: Throwable) {
+                // something did not work - bad luck but just proceed without chained tx
+            }
+        }
+
+        allBoxesLoaded.addAll(inputBoxes)
+        return inputBoxes
     }
+
 }
