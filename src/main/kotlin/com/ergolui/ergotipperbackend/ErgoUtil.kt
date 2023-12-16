@@ -78,7 +78,8 @@ class ErgoUtil(private val environment: Environment) {
                     val txB: UnsignedTransactionBuilder =
                             boxOperations.blockchainContext.newTxBuilder()
 
-                    val newBoxBuilder = txB.outBoxBuilder().contract(contract).value(amountToSend)
+                    val newBoxBuilder =
+                            boxOperations.prepareOutBox(txB).contract(contract).value(amountToSend)
                     val newBox =
                             if (tokensToSend.isNotEmpty())
                                     newBoxBuilder.tokens(*tokensToSend.toTypedArray()).build()
