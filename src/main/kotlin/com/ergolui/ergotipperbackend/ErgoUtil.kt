@@ -2,6 +2,7 @@ package com.ergolui.ergotipperbackend
 
 import javax.annotation.Nonnull
 import org.ergoplatform.appkit.*
+import org.ergoplatform.appkit.BoxAttachmentPlainText
 import org.ergoplatform.appkit.Transaction
 import org.ergoplatform.appkit.impl.ErgoTreeContract
 import org.ergoplatform.sdk.ErgoToken
@@ -71,15 +72,21 @@ class ErgoUtil(private val environment: Environment) {
                             BoxOperations.createForSender(prover.eip3Addresses[0], ctx)
                                     .withAmountToSpend(amountToSend + feeAmount.toLong())
                                     .withFeeAmount(1000000)
-                                    .withMessage(message)
+
                     if (tokensToSend.isNotEmpty())
                             boxOperations = boxOperations.withTokensToSpend(tokensToSend)
+
+                    val attachment: BoxAttachmentPlainText =
+                            BoxAttachmentPlainText.buildForText(message)
 
                     val txB: UnsignedTransactionBuilder =
                             boxOperations.blockchainContext.newTxBuilder()
 
                     val newBoxBuilder =
-                            boxOperations.prepareOutBox(txB).contract(contract).value(amountToSend)
+                            txB.outBoxBuilder()
+                                    .contract(contract)
+                                    .value(amountToSend)
+                                    .registers(*attachment.getOutboxRegistersForAttachment())
                     val newBox =
                             if (tokensToSend.isNotEmpty())
                                     newBoxBuilder.tokens(*tokensToSend.toTypedArray()).build()
